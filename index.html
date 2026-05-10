@@ -1,0 +1,180 @@
+Enter<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>AI Chat</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0f0f0f;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+header {
+    padding: 15px;
+    background: #1a1a1a;
+    text-align: center;
+    font-weight: bold;
+    position: relative;
+}
+
+#chat {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.msg {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+}
+
+.user {
+    background: #2b6cff;
+    margin-left: auto;
+    text-align: right;
+}
+
+.ai {
+    background: #2a2a2a;
+    margin-right: auto;
+}
+
+footer {
+    display: flex;
+    padding: 10px;
+    background: #1a1a1a;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    outline: none;
+}
+
+button {
+    margin-left: 10px;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 8px;
+    background: #2b6cff;
+    color: white;
+    cursor: pointer;
+}
+
+/* الإعدادات */
+#settings {
+    display:none;
+    position:fixed;
+    top:60px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#222;
+    padding:20px;
+    border-radius:10px;
+    width:260px;
+    z-index:999;
+}
+</style>
+
+</head>
+<body>
+
+<header>
+    ⚙️ AI Chat
+
+    <button onclick="openSettings()"
+    style="position:absolute;left:10px;top:10px;padding:6px 10px;border:none;border-radius:6px;">
+    ⚙️
+    </button>
+</header>
+
+<div id="chat"></div>
+
+<footer>
+    <input id="msg" placeholder="اكتب رسالتك...">
+    <button onclick="send()">إرسال</button>
+</footer>
+
+<!-- الإعدادات -->
+<div id="settings">
+    <h3>⚙️ الإعدادات</h3>
+    <p>👥 المتصلين الآن: <span id="online">0</span></p>
+    <p>📊 عدد الزوار: <span id="total">0</span></p>
+    <button onclick="closeSettings()">إغلاق</button>
+</div>
+
+<script>
+
+let chat = document.getElementById("chat");
+let input = document.getElementById("msg");
+
+async function send() {
+    let text = input.value;
+    if (!text) return;
+
+    addMessage(text, "user");
+    input.value = "";
+
+    addMessage("جاري الرد...", "ai");
+
+    let res = await fetch("/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: text})
+    });
+
+    let data = await res.json();
+
+    chat.lastChild.remove();
+    addMessage(data.reply, "ai");
+}
+
+function addMessage(text, type) {
+    let div = document.createElement("div");
+    div.className = "msg " + type;
+    div.innerText = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+input.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") send();
+});
+
+
+// ===== الإعدادات =====
+
+function openSettings(){
+    document.getElementById("settings").style.display = "block";
+    loadStats();
+}
+
+function closeSettings(){
+    document.getElementById("settings").style.display = "none";
+}
+
+async function loadStats(){
+    let res = await fetch("/stats");
+    let data = await res.json();
+
+    document.getElementById("online").innerText = data.online;
+    document.getElementById("total").innerText = data.total;
+}
+
+// تحديث كل 5 ثواني
+setInterval(loadStats, 5000);
+
+</script>
+
+</body>
+</html>
